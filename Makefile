@@ -13,7 +13,7 @@ all: $(TARGET)
 $(TARGET): $(C_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $<
 
-check:
+check: $(TARGET)
 	./$(TARGET)
 
 clean:
