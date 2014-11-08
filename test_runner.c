@@ -144,8 +144,9 @@ int main(int argc, char **argv) {
 		if (ret == -1 && errno != EINTR) {
 			perror("read");
 			exit(1);
+		} else if (ret > 0) {
+			to_read -= ret;
 		}
-		to_read -= ret;
 	}
 
 	puts("Checking on self");
