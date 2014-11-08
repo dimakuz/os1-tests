@@ -11,6 +11,8 @@
 
 #define NR_CHILDREN (20)
 
+static int sync_pipe[2];
+
 static pid_t spawn_zombie_child() {
 	pid_t ret = fork();
 
@@ -23,7 +25,7 @@ static pid_t spawn_zombie_child() {
 	return ret;
 }
 
-void sigusr1_handler(int signr) {
+static void sigusr1_handler(int signr) {
 	exit(1);
 }
 
@@ -33,6 +35,12 @@ static int do_child() {
 		exit(1);
 	}
 	spawn_zombie_child();
+
+	if (write(sync_pipe[1], " ", 1) == -1 && errno != EINTR) {
+		perror("write");
+		exit(1);
+	}
+
 	while (1) ;
 	return 0;
 }
@@ -89,17 +97,55 @@ static void wait_on_child(pid_t child) {
 
 #define ASSERT_EQUALS(first, second, fmt...) 				\
 	do {								\
-		printf(fmt);						\
-		printf(" %s\n", (first) == (second) ? "OK" : "FAIL");	\
+		int _f = (first);					\
+		int _s = (second);					\
+		printf(fmt); printf(" ");				\
+		if (_f == _s)						\
+			puts("PASS");					\
+		else							\
+			printf(" FAIL, %d != %d \n", _f, _s);		\
 	} while (0)
 
 int main(int argc, char **argv) {
-	int i;
 	pid_t pids[NR_CHILDREN];
 	pid_t parent_pid = getpid();
+	size_t to_read;
+	int i;
+
+	puts("Checking on swapper");
+	ASSERT_EQUALS(slow_count_sons(0),
+		      1,
+		      "slow_count_sons %u", 0);
+	ASSERT_EQUALS(fast_count_sons(0),
+		      1,
+		      "fast_count_sons %u", 0);
+
+	puts("Checking on self w/o sons");
+	ASSERT_EQUALS(slow_count_sons(parent_pid),
+		      0,
+		      "slow_count_sons %u", parent_pid);
+	ASSERT_EQUALS(fast_count_sons(parent_pid),
+		      0,
+		      "fast_count_sons %u", parent_pid);
+
+	if (pipe(sync_pipe)) {
+		perror("pipe");
+		exit(1);
+	}
 
 	for (i = 0; i < NR_CHILDREN; ++i)
 		pids[i] = spawn_waiting_child();
+
+	to_read = NR_CHILDREN;
+	while (to_read) {
+		char buffer[NR_CHILDREN];
+		ssize_t ret = read(sync_pipe[0], buffer, to_read);
+		if (ret == -1 && errno != EINTR) {
+			perror("read");
+			exit(1);
+		}
+		to_read -= ret;
+	}
 
 	puts("Checking on self");
 	ASSERT_EQUALS(slow_count_sons(parent_pid),
