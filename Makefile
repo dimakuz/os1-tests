@@ -19,4 +19,4 @@ check: $(TARGET)
 clean:
 	rm -rf $(TARGET) *.o
 
-.PHONY += check clean
+.PHONY: check clean
