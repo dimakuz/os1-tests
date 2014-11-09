@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
 
 	puts("Checking living children");
 	for (i = 0; i < NR_CHILDREN; ++i) {
-		ASSERT_EQUALS(slow_count_sons(pids[1]),
+		ASSERT_EQUALS(slow_count_sons(pids[i]),
 			      1,
 			      "slow_count_sons %d %u", i, pids[i]);
 		ASSERT_EQUALS(fast_count_sons(pids[i]),
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 		      NR_CHILDREN,
 		      "fast_count_sons %u", parent_pid);
 	for (i = 0; i < NR_CHILDREN; ++i) {
-		ASSERT_EQUALS(slow_count_sons(pids[1]),
+		ASSERT_EQUALS(slow_count_sons(pids[i]),
 			      0,
 			      "slow_count_sons %d %u", i, pids[i]);
 		ASSERT_EQUALS(fast_count_sons(pids[i]),
