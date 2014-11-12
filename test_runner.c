@@ -112,6 +112,29 @@ int main(int argc, char **argv) {
 	pid_t parent_pid = getpid();
 	size_t to_read;
 	int i;
+	int ret;
+	unsigned int saved_errno;
+
+	puts("Check error codes");
+	ret = slow_count_sons(-1234);
+	saved_errno = errno;
+	ASSERT_EQUALS(ret, -1, "slow_count_sons(-1234)");
+	ASSERT_EQUALS(saved_errno, EINVAL, "slow_count_sons(-1234) errno");
+
+	ret = fast_count_sons(-1234);
+	saved_errno = errno;
+	ASSERT_EQUALS(ret, -1, "fast_count_sons(-1234)");
+	ASSERT_EQUALS(saved_errno, EINVAL, "fast_count_sons(-1234) errno");
+
+	ret = slow_count_sons(1 << 30); // On most kernels max pid is 32768
+	saved_errno = errno;
+	ASSERT_EQUALS(ret, -1, "slow_count_sons(1 << 30)");
+	ASSERT_EQUALS(saved_errno, ESRCH, "slow_count_sons(-1234) errno");
+
+	ret = fast_count_sons(1 << 30);
+	saved_errno = errno;
+	ASSERT_EQUALS(ret, -1, "fast_count_sons(1 << 30)");
+	ASSERT_EQUALS(saved_errno, ESRCH, "fast_count_sons(-1234) errno");
 
 	puts("Checking on swapper");
 	ASSERT_EQUALS(slow_count_sons(0),
